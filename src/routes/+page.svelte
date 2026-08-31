@@ -208,9 +208,9 @@
 		ctx.strokeRect(x + m.x - 2.5, y + m.y - 2.5, 5, 5);
 		requestAnimationFrame(draw);
 	};
-	let x = 0;
-	let y = 0;
-	let z = 1;
+	let x = -20;
+	let y = -20;
+	let z = 8;
 	const mouse = { x: 0, y: 0 };
 	useEventListener(
 		() => canvas,
@@ -243,8 +243,6 @@
 	);
 
 	onMount(() => {
-		x = (-window.screen.width * window.devicePixelRatio) / 2;
-		y = (-window.screen.height * window.devicePixelRatio) / 2;
 		requestAnimationFrame(draw);
 	});
 </script>
