@@ -214,7 +214,7 @@
 		'wheel',
 		(e) => {
 			const zDelta = 1.001 ** e.deltaY;
-			if (e.metaKey) {
+			if (e.metaKey || e.ctrlKey) {
 				const m = getM();
 				z *= zDelta;
 				x += m.x * zDelta - m.x;
