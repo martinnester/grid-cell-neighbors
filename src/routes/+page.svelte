@@ -19,71 +19,68 @@
 		(acc: number, [cell, i, j]: [number, number, number]) => number
 	>;
 
-	const gridPresets: Record<
-		string,
-		{data: number[][], N: number}
-	> = {
+	const gridPresets: Record<string, { data: number[][]; N: number }> = {
 		'Example 1': {
 			data: [
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,50,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			],
 			N: 3
 		},
 		'Example 2': {
-			data:[
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,50,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
+			data: [
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			],
 			N: 3
 		},
 		'Example 3': {
-			data:[
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,50,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,50,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
+			data: [
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			],
 			N: 2
 		},
 		'Example 4': {
 			data: [
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,50,0,0,0,0,0],
-				[0,0,0,50,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0,0,0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
+				[0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			],
 			N: 2
 		}
@@ -107,11 +104,11 @@
 	let A: keyof typeof accumulators = $state('Add One');
 	let T: keyof typeof targetPredicates = $state('> 0');
 	let D: keyof typeof distanceFormula = $state('Manhattan');
-	let P : keyof typeof gridPresets = $state('Example 1');
+	let P: keyof typeof gridPresets = $state('Example 1');
 
 	let dimEffected = $state(true);
 
-	let grid = $derived(gridPresets[P])
+	let grid = $derived(gridPresets[P]);
 
 	let canvas: HTMLCanvasElement | null = $state(null);
 	let canvasParent: HTMLDivElement | null = $state(null);
@@ -253,6 +250,7 @@
 		onValueChange={(details) => {
 			current = details.value[0];
 		}}
+		step={5}
 		{min}
 		{max}
 	>
@@ -272,17 +270,19 @@
 	</Slider>
 {/snippet}
 {#snippet presetSelector()}
-						<select class="select" bind:value={P}>
-				{#each Object.entries(gridPresets) as [k] (k)}
-					<option value={k}>{k}</option>
-				{/each}
-			</select>
+	<select class="select" bind:value={P}>
+		{#each Object.entries(gridPresets) as [k] (k)}
+			<option value={k}>{k}</option>
+		{/each}
+	</select>
 {/snippet}
 {#snippet controls(action: Snippet)}
 	<header class="flex items-center justify-between gap-2">
-		{@render presetSelector()}
+		<h3 class="syncopate-bold h3" style="color: #FFFF88;">GRID CELL NEIGHBORS</h3>
 		{@render action()}
 	</header>
+	{@render presetSelector()}
+
 	<div class="space-y-2">
 		<h3 class="h5">Algorithm Options</h3>
 		<label class="label">
@@ -344,8 +344,21 @@
 
 		{@render slider()}
 	</div>
-	<div class="badge-base LI-profile-badge" data-locale="en_US" data-size="medium" data-theme="dark" data-type="VERTICAL" data-vanity="martinnester" data-version="v1"><a class="badge-base__link LI-simple-link" href="https://www.linkedin.com/in/martinnester?trk=profile-badge">Martin Nester</a></div>
-              
+	<div
+		class="badge-base LI-profile-badge"
+		data-locale="en_US"
+		data-size="medium"
+		data-theme="dark"
+		data-type="VERTICAL"
+		data-vanity="martinnester"
+		data-version="v1"
+	>
+		<a
+			class="badge-base__link LI-simple-link"
+			style="display: none;"
+			href="https://www.linkedin.com/in/martinnester?trk=profile-badge">Martin Nester</a
+		>
+	</div>
 {/snippet}
 
 {#snippet unpinAction()}
@@ -387,7 +400,7 @@
 			{@render slider()}
 		</div>
 	{/if}
-	<h3 class="absolute top-4 right-4 flex flex-row gap-8 h3">
+	<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
 		{result}
 	</h3>
 
