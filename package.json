@@ -21,7 +21,6 @@
 		"@playwright/test": "^1.60.0",
 		"@skeletonlabs/skeleton": "^5.0.1",
 		"@skeletonlabs/skeleton-svelte": "^5.0.1",
-		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@tailwindcss/forms": "^0.5.11",
@@ -48,6 +47,7 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^1.37.0",
+		"@sveltejs/adapter-static": "^3.0.10",
 		"runed": "^0.37.1"
 	}
 }
