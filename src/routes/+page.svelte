@@ -83,6 +83,10 @@
 				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 			],
 			N: 2
+		},
+		'Big Example': {
+			data: Array.from({length:200}).map(()=> Array.from({length:200}).map(()=>Math.random()>0.95 ? 50 : 0)),
+			N: 2,
 		}
 	};
 
