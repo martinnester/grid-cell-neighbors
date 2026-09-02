@@ -96,7 +96,7 @@
 		'> 0': ([cell]) => cell > 0
 	} as const satisfies Record<string, ([cell, i, j]: [number, number, number]) => boolean>;
 
-	const distanceFormula = {
+	const distanceFormulas = {
 		Manhattan: ([i1, j1, i2, j2]) => Math.abs(i1 - i2) + Math.abs(j1 - j2),
 		Euclidean: ([i1, j1, i2, j2]) => Math.sqrt(Math.pow(i1 - i2, 2) + Math.pow(j1 - j2, 2)),
 		Chebyshev: ([i1, j1, i2, j2]) => Math.max(Math.abs(i1 - i2), Math.abs(j1 - j2))
@@ -109,7 +109,7 @@
 	let result = $state(0);
 	let A: keyof typeof accumulators = $state('Add One');
 	let T: keyof typeof targetPredicates = $state('> 0');
-	let D: keyof typeof distanceFormula = $state('Manhattan');
+	let D: keyof typeof distanceFormulas = $state('Manhattan');
 	let P: keyof typeof gridPresets = $state('Example 1');
 
 	let dimEffected = $state(true);
@@ -147,6 +147,49 @@
 		const percentGreen = ((cell - min) / (max - min)) * 100;
 		return `color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%)`;
 	};
+	const reduceCells = <Result, Cell>(
+		data: Cell[][],
+		callbackfn: (
+			previousValue: Result,
+			currentValue: Cell,
+			currentIndex: [number, number]
+		) => Result,
+		initialValue: Result
+	): Result =>
+		data.reduce(
+			(accRows, row, i) =>
+				row.reduce((accCols, col, j) => callbackfn(accCols, col, [i, j]), accRows),
+			initialValue
+		);
+
+	const countGridCellNeighborhoods = (
+		grid: number[][],
+		N: number,
+		options: {
+			distanceFormula: (pos: [number, number, number, number]) => number;
+			accumulator: (prev: number, cellInfo: [number, number, number]) => number;
+			targetPredicate: (info: [number, number, number]) => boolean;
+		}
+	) => {
+		const targets: [number, number][] = reduceCells(
+			grid,
+			(prev, cell, [i, j]) => (options.targetPredicate([cell, i, j]) ? [...prev, [i, j]] : prev),
+			<[number, number][]>[]
+		);
+		type Res = [number, [number, number][]];
+		return reduceCells(
+			grid,
+			([prevResult, prevEffected], cell, [i1, j1]) =>
+				targets.find(([i2, j2]) => options.distanceFormula([i1, j1, i2, j2]) <= N)
+					? ([
+							options.accumulator(prevResult, [cell, i1, j1]),
+							[...prevEffected, [i1, j1] as const]
+						] satisfies Res)
+					: ([prevResult, prevEffected] satisfies Res),
+			[0, <[number, number][]>[]] satisfies Res
+		);
+	};
+
 	const draw = () => {
 		// nullish checks:
 		if (!canvasParent) {
@@ -168,20 +211,6 @@
 		ctx.translate(-x, -y);
 
 		// helpers:
-		const reduceCells = <Result, Cell>(
-			data: Cell[][],
-			callbackfn: (
-				previousValue: Result,
-				currentValue: Cell,
-				currentIndex: [number, number]
-			) => Result,
-			initialValue: Result
-		): Result =>
-			data.reduce(
-				(accRows, row, i) =>
-					row.reduce((accCols, col, j) => callbackfn(accCols, col, [i, j]), accRows),
-				initialValue
-			);
 		const size = 10;
 		const m = getM();
 
@@ -208,19 +237,11 @@
 		);
 
 		// the algorithm:
-		const targets: [number, number][] = reduceCells(
-			grid.data,
-			(prev, cell, [i, j]) => (targetPredicates[T]([cell, i, j]) ? [...prev, [i, j]] : prev),
-			<[number, number][]>[]
-		);
-		const [newResult, effected] = reduceCells(
-			grid.data,
-			([prevResult, prevEffected], cell, [i1, j1]) =>
-				targets.find(([i2, j2]) => distanceFormula[D]([i1, j1, i2, j2]) <= grid.N)
-					? [accumulators[A](prevResult, [cell, i1, j1]), [...prevEffected, [i1, j1] as const]]
-					: [prevResult, prevEffected],
-			[0, <(readonly [number, number])[]>[]]
-		);
+		const [newResult, effected] = countGridCellNeighborhoods(grid.data, grid.N, {
+			distanceFormula: distanceFormulas[D],
+			accumulator: accumulators[A],
+			targetPredicate: targetPredicates[T]
+		});
 
 		// display results:
 		result = newResult;
@@ -324,7 +345,7 @@
 				>Distance Formula <span class="badge preset-filled-brand">D</span></span
 			>
 			<select class="select" bind:value={D}>
-				{#each Object.entries(distanceFormula) as [k] (k)}
+				{#each Object.entries(distanceFormulas) as [k] (k)}
 					<option value={k}>{k}</option>
 				{/each}
 			</select>
