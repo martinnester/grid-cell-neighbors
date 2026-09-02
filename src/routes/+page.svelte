@@ -85,8 +85,10 @@
 			N: 2
 		},
 		'Big Example': {
-			data: Array.from({length:200}).map(()=> Array.from({length:200}).map(()=>Math.random()>0.95 ? 50 : 0)),
-			N: 2,
+			data: Array.from({ length: 200 }).map(() =>
+				Array.from({ length: 200 }).map(() => (Math.random() > 0.95 ? 50 : 0))
+			),
+			N: 2
 		}
 	};
 
@@ -141,12 +143,12 @@
 			y: (mouse.y * window.devicePixelRatio) / z
 		};
 	};
-	const getColor = (cell: number, effected: boolean = false) => {
+	const getColor = (cell: number) => {
 		const percentGreen = ((cell - min) / (max - min)) * 100;
-		const percentTransparent = effected ? 50 : 0;
-		return `color-mix(in lch, color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%) ${100 - percentTransparent}%, transparent ${percentTransparent}%`;
+		return `color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%)`;
 	};
 	const draw = () => {
+		// nullish checks:
 		if (!canvasParent) {
 			throw new Error('Canvas parent failed to mount');
 		}
@@ -158,36 +160,36 @@
 			throw new Error('Could not get CanvasRenderingContext2D');
 		}
 
+		// resize (TO-DO: just put in ResizeObserver?)
 		canvas.width = canvasParent.clientWidth * window.devicePixelRatio;
 		canvas.height = canvasParent.clientHeight * window.devicePixelRatio;
-
+		// move bases on panning/zoom
 		ctx.scale(z, z);
 		ctx.translate(-x, -y);
-		const m = getM();
-		ctx.strokeStyle = 'white';
-		const targets: [number, number][] = [];
-		for (const [i, row] of grid.data.entries()) {
-			for (const [j, cell] of row.entries()) {
-				if (targetPredicates[T]([cell, i, j])) {
-					targets.push([i, j]);
-				}
-			}
-		}
+
+		// helpers:
+		const reduceCells = <Result, Cell>(
+			data: Cell[][],
+			callbackfn: (
+				previousValue: Result,
+				currentValue: Cell,
+				currentIndex: [number, number]
+			) => Result,
+			initialValue: Result
+		): Result =>
+			data.reduce(
+				(accRows, row, i) =>
+					row.reduce((accCols, col, j) => callbackfn(accCols, col, [i, j]), accRows),
+				initialValue
+			);
 		const size = 10;
-		result = 0;
-		for (const [i, row] of grid.data.entries()) {
-			for (const [j, cell] of row.entries()) {
+		const m = getM();
+
+		// display input data:
+		reduceCells(
+			grid.data,
+			(_, cell, [i, j]) => {
 				ctx.fillStyle = getColor(cell);
-				for (const [i2, j2] of targets) {
-					const distance = distanceFormula[D]([i, j, i2, j2]);
-					if (distance <= grid.N) {
-						if (dimEffected) {
-							ctx.fillStyle = getColor(cell, true);
-						}
-						result = accumulators[A](result, [cell, i, j]);
-						break;
-					}
-				}
 				ctx.fillRect(j * size, i * size, size, size);
 				ctx.lineWidth = 0.5;
 				if (
@@ -201,12 +203,39 @@
 						grid.data[i][j] = current;
 					}
 				}
-			}
-		}
+			},
+			<void>undefined
+		);
+
+		// the algorithm:
+		const targets: [number, number][] = reduceCells(
+			grid.data,
+			(prev, cell, [i, j]) => (targetPredicates[T]([cell, i, j]) ? [...prev, [i, j]] : prev),
+			<[number, number][]>[]
+		);
+		const [newResult, effected] = reduceCells(
+			grid.data,
+			([prevResult, prevEffected], cell, [i1, j1]) =>
+				targets.find(([i2, j2]) => distanceFormula[D]([i1, j1, i2, j2]) <= grid.N)
+					? [accumulators[A](prevResult, [cell, i1, j1]), [...prevEffected, [i1, j1] as const]]
+					: [prevResult, prevEffected],
+			[0, <(readonly [number, number])[]>[]]
+		);
+
+		// display results:
+		result = newResult;
+		effected.forEach(([i, j]) => {
+			ctx.fillStyle = '#ffffff4f';
+			ctx.fillRect(j * size, i * size, size, size);
+		});
+
+		// user cursor:
 		ctx.fillStyle = getColor(current);
 		ctx.lineWidth = 1;
 		ctx.fillRect(x + m.x - 2.5, y + m.y - 2.5, 5, 5);
 		ctx.strokeRect(x + m.x - 2.5, y + m.y - 2.5, 5, 5);
+
+		//rinse and repeat:
 		requestAnimationFrame(draw);
 	};
 	let x = -20;
