@@ -240,6 +240,7 @@
 	);
 
 	onMount(() => {
+		new Worker(new URL('./worker.ts', import.meta.url));
 		requestAnimationFrame(draw);
 	});
 </script>
