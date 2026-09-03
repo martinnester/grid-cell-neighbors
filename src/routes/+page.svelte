@@ -6,24 +6,24 @@
 	import MenuIcon from '@lucide/svelte/icons/menu';
 
 	import { useEventListener } from 'runed';
-	import { countGridCellNeighborhoods, reduceCells } from '../solution/algorithms';
-	import {
-		accumulators,
-		distanceFormulas,
-		gridPresets,
-		targetPredicates,
-		type NCGCNResult
-	} from '../solution/constants';
+	import { gridCellNeighborhoods, flattenGrid, Vec2d } from '../solution/algorithms';
+	import { distanceFormulas, gridPresets, targetPredicates } from '../solution/constants';
+
+	const accumulators = {
+		'Add One': (prev) => prev + 1,
+		'Add Value': (prev, current) => prev + current
+	} as const satisfies Record<string, (prev: number, current: number) => number>;
 
 	let pinned = $state(true);
 	let min = $state(-50);
 	let max = $state(50);
 
 	let current = $state(0);
-	let result = $state<NCGCNResult>({
+	const getDefaultResult = () => ({
 		accumulation: 0,
-		effected: []
+		effected: <Array<Vec2d>>[]
 	});
+	let result = $state(getDefaultResult());
 	let A: keyof typeof accumulators = $state('Add One');
 	let T: keyof typeof targetPredicates = $state('> 0');
 	let D: keyof typeof distanceFormulas = $state('Manhattan');
@@ -65,12 +65,18 @@
 		return `color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%)`;
 	};
 	const updateResult = () => {
-		result = countGridCellNeighborhoods(grid.data, grid.N, {
+		result = gridCellNeighborhoods({
+			grid: grid.data,
+			N: grid.N,
 			distanceFormula: distanceFormulas[D],
-			accumulator: accumulators[A],
-			targetPredicate: targetPredicates[T],
-			initialAccumulation: 0
-		});
+			targetPredicate: targetPredicates[T]
+		}).reduce(
+			({ accumulation, effected }, { pos, value }) => ({
+				accumulation: accumulators[A](accumulation, value),
+				effected: [...effected, pos]
+			}),
+			getDefaultResult()
+		);
 	};
 
 	const draw = () => {
@@ -98,35 +104,31 @@
 		const m = getM();
 
 		// display input data:
-		reduceCells(
-			grid.data,
-			(_, cell, [i, j]) => {
-				ctx.fillStyle = getColor(cell);
-				ctx.fillRect(j * size, i * size, size, size);
-				ctx.lineWidth = 0.5;
-				if (
-					x + m.x >= j * size &&
-					x + m.x <= j * size + size &&
-					y + m.y >= i * size &&
-					y + m.y <= i * size + size
-				) {
-					ctx.strokeRect(j * size, i * size, size, size);
-					if (mouseDown) {
-						if (grid.data[i][j] !== current) {
-							grid.data[i][j] = current;
-							updateResult();
-						}
+		flattenGrid(grid.data).forEach(({ pos, value }) => {
+			ctx.fillStyle = getColor(value);
+			ctx.fillRect(pos.x * size, pos.y * size, size, size);
+			ctx.lineWidth = 0.5;
+			if (
+				x + m.x >= pos.x * size &&
+				x + m.x <= pos.x * size + size &&
+				y + m.y >= pos.y * size &&
+				y + m.y <= pos.y * size + size
+			) {
+				ctx.strokeRect(pos.x * size, pos.y * size, size, size);
+				if (mouseDown) {
+					if (grid.data.get(pos) !== current) {
+						grid.data.set(pos, current);
+						updateResult();
 					}
 				}
-			},
-			<void>undefined
-		);
+			}
+		});
 
 		// display results:
 		if (dimEffected) {
-			result.effected.forEach(([i, j]) => {
+			result.effected.forEach((pos) => {
 				ctx.fillStyle = '#ffffff4f';
-				ctx.fillRect(j * size, i * size, size, size);
+				ctx.fillRect(pos.x * size, pos.y * size, size, size);
 			});
 		}
 

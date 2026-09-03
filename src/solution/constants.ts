@@ -1,28 +1,44 @@
-import type {
-	CountGridCellNeighborhoodsOptions,
-	CountGridCellNeighborhoodsResult,
-	Grid
-} from './algorithms';
+import { Vec2d, type GridCellNeighborhoodsOptions, type Grid } from './algorithms';
 
-export type NGrid = Grid<number>;
-export type NCGCNOptions = CountGridCellNeighborhoodsOptions<number, number>;
-export type NCGCNResult = CountGridCellNeighborhoodsResult<number>;
+export type NGCNOptions = GridCellNeighborhoodsOptions<number>;
 
-export const accumulators = {
-	'Add Value': (acc, _, cell) => acc + cell,
-	'Add One': (acc) => acc + 1
-} as const satisfies Record<string, NCGCNOptions['accumulator']>;
+class NGrid implements Grid<number> {
+	readonly data: number[][];
+	readonly size: Vec2d;
+	constructor(data: typeof this.data) {
+		this.data = data;
+		this.size = new Vec2d(this.data.length, this.data[0].length);
+	}
+	get(pos: Vec2d): number | undefined {
+		return this.data[pos.x]?.[pos.y];
+	}
+	set(pos: Vec2d, value: number) {
+		this.data[pos.x][pos.y] = value;
+	}
+	*rows(): Generator<{ columns(): Generator<number> }> {
+		for (const row of this.data) {
+			function* columns() {
+				for (const col of row) {
+					yield col;
+				}
+			}
+			yield { columns };
+		}
+	}
+}
 
 export const genRandomGrid = (size: number) => ({
-	data: Array.from({ length: size }).map(() =>
-		Array.from({ length: size }).map(() => (Math.random() > 0.9 ? 50 : 0))
+	data: new NGrid(
+		Array.from({ length: size }).map(() =>
+			Array.from({ length: size }).map(() => (Math.random() > 0.9 ? 50 : 0))
+		)
 	),
 	N: 1
 });
 
 export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 	'Example 1': {
-		data: [
+		data: new NGrid([
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -34,11 +50,11 @@ export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		],
+		]),
 		N: 3
 	},
 	'Example 2': {
-		data: [
+		data: new NGrid([
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -50,11 +66,11 @@ export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		],
+		]),
 		N: 3
 	},
 	'Example 3': {
-		data: [
+		data: new NGrid([
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -66,11 +82,11 @@ export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		],
+		]),
 		N: 2
 	},
 	'Example 4': {
-		data: [
+		data: new NGrid([
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -82,7 +98,7 @@ export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		],
+		]),
 		N: 2
 	},
 	'100x100': genRandomGrid(100),
@@ -92,11 +108,11 @@ export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 };
 
 export const targetPredicates = {
-	'> 0': (_, cell) => cell > 0
-} as const satisfies Record<string, NCGCNOptions['targetPredicate']>;
+	'> 0': ({ value }) => value > 0
+} as const satisfies Record<string, NGCNOptions['targetPredicate']>;
 
 export const distanceFormulas = {
-	Manhattan: ([i1, j1], [i2, j2]) => Math.abs(i1 - i2) + Math.abs(j1 - j2),
-	Euclidean: ([i1, j1], [i2, j2]) => Math.sqrt(Math.pow(i1 - i2, 2) + Math.pow(j1 - j2, 2)),
-	Chebyshev: ([i1, j1], [i2, j2]) => Math.max(Math.abs(i1 - i2), Math.abs(j1 - j2))
-} as const satisfies Record<string, NCGCNOptions['distanceFormula']>;
+	Manhattan: (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
+	Euclidean: (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2)),
+	Chebyshev: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+} as const satisfies Record<string, NGCNOptions['distanceFormula']>;
