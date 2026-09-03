@@ -471,7 +471,7 @@
 		</div>
 	{/if}
 	<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
-		{result.count}
+		{result.count.toLocaleString()}
 	</h3>
 
 	<canvas bind:this={canvas} class="my-canvas"></canvas>
