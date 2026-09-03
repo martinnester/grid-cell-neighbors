@@ -29,9 +29,9 @@
 
 	const genRandomGrid = (size: number) => ({
 		data: Array.from({ length: size }).map(() =>
-			Array.from({ length: size }).map(() => (Math.random() > 0.95 ? 50 : 0))
+			Array.from({ length: size }).map(() => (Math.random() > 0.9 ? 50 : 0))
 		),
-		N: 2
+		N: 1
 	});
 
 	const gridPresets: Record<string, { data: NGrid; N: number }> = {
@@ -99,6 +99,7 @@
 			],
 			N: 2
 		},
+		'100x100': genRandomGrid(100),
 		'200x200': genRandomGrid(200),
 		'400x400': genRandomGrid(400),
 		'1000x1000': genRandomGrid(1000)
