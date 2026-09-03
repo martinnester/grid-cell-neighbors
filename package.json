@@ -47,6 +47,7 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^1.37.0",
+		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"runed": "^0.37.1"
 	}
