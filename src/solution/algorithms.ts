@@ -1,4 +1,5 @@
-import type { Grid, GridPos } from './types';
+export type GridPos = readonly [number, number];
+export type Grid<Cell> = Cell[][];
 
 enum BFSVisitResult {
 	FOUND,
