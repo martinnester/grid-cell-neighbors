@@ -4,6 +4,7 @@
 	import PinIcon from '@lucide/svelte/icons/pin';
 	import PinOffIcon from '@lucide/svelte/icons/pin-off';
 	import MenuIcon from '@lucide/svelte/icons/menu';
+	import { browser } from '$app/env';
 
 	import { useEventListener } from 'runed';
 
@@ -470,9 +471,11 @@
 			{@render slider()}
 		</div>
 	{/if}
-	<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
-		{result.count.toLocaleString()}
-	</h3>
+	{#if browser}
+		<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
+			{result.count.toLocaleString()}
+		</h3>
+	{/if}
 
 	<canvas bind:this={canvas} class="my-canvas"></canvas>
 </div>
