@@ -10,7 +10,7 @@
 		countGridCellNeighborhoods,
 		reduceCells,
 		type CountGridCellNeighborhoodsOptions,
-		type CountGridCellNeighborhoodsResult,
+		type CountGridCellNeighborhoodsResult
 	} from '../solution/algorithms';
 	import type { Grid } from '../solution/types';
 

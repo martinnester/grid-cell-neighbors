@@ -1,4 +1,52 @@
-import type { Grid, GridPos } from "./types";
+import type { Grid, GridPos } from './types';
+
+enum BFSVisitResult {
+	FOUND,
+	CONTINUE,
+	PRUNE
+}
+
+const OFFSETS = [
+	[-1, 0],
+	[1, 0],
+	[0, -1],
+	[0, 1]
+];
+/** Breadth-First Search
+ * @param grid target, conceptually the edges in the graph between adjacent cell (not at an angle)
+ * @param visit called with each cell in the traversal, returning `BFSVisitResult.PRUNE` will prune a branch
+ * @returns true if a call to a visit returned `BFSVisitResult.FOUND`, false otherwise
+ */
+const bfs = <Cell>(
+	grid: Grid<Cell>,
+	startPos: GridPos,
+	visit: (pos: GridPos, value: Cell) => BFSVisitResult
+): boolean => {
+	const visited = new Set<string>(`${startPos[0]},${startPos[1]}`);
+	const queue = [startPos];
+	while (queue.length) {
+		const current = queue.shift()!;
+		const value = grid[current[0]][current[1]];
+		switch (visit(current, value)) {
+			case BFSVisitResult.CONTINUE:
+				OFFSETS.forEach((offset) => {
+					const i = current[0] + offset[0];
+					const j = current[1] + offset[1];
+					const key = `${i},${j}`;
+					if (i >= 0 && j >= 0 && i < grid.length && j < grid[i].length && !visited.has(key)) {
+						visited.add(key);
+						queue.push([i, j]);
+					}
+				});
+				break;
+			case BFSVisitResult.FOUND:
+				return true;
+			case BFSVisitResult.PRUNE:
+				continue;
+		}
+	}
+	return false;
+};
 
 export const reduceCells = <Result, Cell>(
 	data: Grid<Cell>,
@@ -22,19 +70,22 @@ export const countGridCellNeighborhoods = <Cell, Acc>(
 	N: number,
 	options: CountGridCellNeighborhoodsOptions<Cell, Acc>
 ): CountGridCellNeighborhoodsResult<Acc> => {
-	const targets: [number, number][] = reduceCells(
-		grid,
-		(prev, cell, [i, j]) =>
-			options.targetPredicate([i, j], cell) ? ([...prev, [i, j]] as const) : prev,
-		<[number, number][]>[]
-	);
 	return reduceCells(
 		grid,
-		({ accumulation, effected }, cell, [i1, j1]) =>
-			targets.find(([i2, j2]) => options.distanceFormula([i1, j1], [i2, j2]) <= N)
+		({ accumulation, effected }, cell, startPos) =>
+			bfs(grid, startPos, (currPos, value) => {
+				const dist = options.distanceFormula(startPos, currPos);
+				if (dist > N) {
+					return BFSVisitResult.PRUNE;
+				}
+				if (options.targetPredicate(currPos, value)) {
+					return BFSVisitResult.FOUND;
+				}
+				return BFSVisitResult.CONTINUE;
+			})
 				? {
-						accumulation: options.accumulator(accumulation, [i1, j1], cell),
-						effected: [...effected, [i1, j1] as const]
+						accumulation: options.accumulator(accumulation, startPos, cell),
+						effected: [...effected, startPos]
 					}
 				: { accumulation, effected },
 		<CountGridCellNeighborhoodsResult<Acc>>{
