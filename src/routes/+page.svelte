@@ -106,7 +106,10 @@
 	>;
 
 	let current = $state(0);
-	let result = $state(0);
+	let result = $state({
+		count: 0,
+		effected: <[number, number][]>[]
+	});
 	let A: keyof typeof accumulators = $state('Add One');
 	let T: keyof typeof targetPredicates = $state('> 0');
 	let D: keyof typeof distanceFormulas = $state('Manhattan');
@@ -170,24 +173,32 @@
 			accumulator: (prev: number, cellInfo: [number, number, number]) => number;
 			targetPredicate: (info: [number, number, number]) => boolean;
 		}
-	) => {
+	): { effected: [number, number][]; count: number } => {
+		type Ret = ReturnType<typeof countGridCellNeighborhoods>;
 		const targets: [number, number][] = reduceCells(
 			grid,
 			(prev, cell, [i, j]) => (options.targetPredicate([cell, i, j]) ? [...prev, [i, j]] : prev),
 			<[number, number][]>[]
 		);
-		type Res = [number, [number, number][]];
 		return reduceCells(
 			grid,
-			([prevResult, prevEffected], cell, [i1, j1]) =>
+			({ count, effected }, cell, [i1, j1]) =>
 				targets.find(([i2, j2]) => options.distanceFormula([i1, j1, i2, j2]) <= N)
-					? ([
-							options.accumulator(prevResult, [cell, i1, j1]),
-							[...prevEffected, [i1, j1] as const]
-						] satisfies Res)
-					: ([prevResult, prevEffected] satisfies Res),
-			[0, <[number, number][]>[]] satisfies Res
+					? {
+							count: options.accumulator(count, [cell, i1, j1]),
+							effected: [...effected, [i1, j1] as const]
+						}
+					: { count, effected },
+			<Ret>{ count: 0, effected: [] }
 		);
+	};
+
+	const updateResult = () => {
+		result = countGridCellNeighborhoods(grid.data, grid.N, {
+			distanceFormula: distanceFormulas[D],
+			accumulator: accumulators[A],
+			targetPredicate: targetPredicates[T]
+		});
 	};
 
 	const draw = () => {
@@ -229,23 +240,18 @@
 				) {
 					ctx.strokeRect(j * size, i * size, size, size);
 					if (mouseDown) {
-						grid.data[i][j] = current;
+						if (grid.data[i][j] !== current) {
+							grid.data[i][j] = current;
+							updateResult();
+						}
 					}
 				}
 			},
 			<void>undefined
 		);
 
-		// the algorithm:
-		const [newResult, effected] = countGridCellNeighborhoods(grid.data, grid.N, {
-			distanceFormula: distanceFormulas[D],
-			accumulator: accumulators[A],
-			targetPredicate: targetPredicates[T]
-		});
-
 		// display results:
-		result = newResult;
-		effected.forEach(([i, j]) => {
+		result.effected.forEach(([i, j]) => {
 			ctx.fillStyle = '#ffffff4f';
 			ctx.fillRect(j * size, i * size, size, size);
 		});
@@ -292,7 +298,9 @@
 			// console.log(mouse.x,mouse.y)
 		}
 	);
-
+	$effect(() => {
+		updateResult();
+	});
 	onMount(() => {
 		new Worker(new URL('./worker.ts', import.meta.url));
 		requestAnimationFrame(draw);
@@ -352,7 +360,14 @@
 		</label>
 		<label class="label">
 			<span class="label-text">Blast Radius <span class="badge preset-filled-brand">N</span></span>
-			<input class="input" type="number" placeholder="Input" bind:value={grid.N} min="0" />
+			<input
+				class="input"
+				type="number"
+				placeholder="Input"
+				bind:value={grid.N}
+				min="0"
+				onchange={updateResult}
+			/>
 		</label>
 		<label class="label">
 			<span class="label-text"
@@ -456,7 +471,7 @@
 		</div>
 	{/if}
 	<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
-		{result}
+		{result.count}
 	</h3>
 
 	<canvas bind:this={canvas} class="my-canvas"></canvas>
