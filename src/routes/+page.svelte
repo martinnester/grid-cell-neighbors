@@ -6,18 +6,26 @@
 	import MenuIcon from '@lucide/svelte/icons/menu';
 
 	import { useEventListener } from 'runed';
+	import {
+		countGridCellNeighborhoods,
+		reduceCells,
+		type CountGridCellNeighborhoodsOptions,
+		type CountGridCellNeighborhoodsResult,
+	} from '../solution/algorithms';
+	import type { Grid } from '../solution/types';
+
+	type NGrid = Grid<number>;
+	type NCGCNOptions = CountGridCellNeighborhoodsOptions<number, number>;
+	type NCGCNResult = CountGridCellNeighborhoodsResult<number>;
 
 	let pinned = $state(true);
 	let min = $state(-50);
 	let max = $state(50);
 
 	const accumulators = {
-		'Add Value': (acc, [cell]) => acc + cell,
+		'Add Value': (acc, _, cell) => acc + cell,
 		'Add One': (acc) => acc + 1
-	} as const satisfies Record<
-		string,
-		(acc: number, [cell, i, j]: [number, number, number]) => number
-	>;
+	} as const satisfies Record<string, NCGCNOptions['accumulator']>;
 
 	const genRandomGrid = (size: number) => ({
 		data: Array.from({ length: size }).map(() =>
@@ -26,7 +34,7 @@
 		N: 2
 	});
 
-	const gridPresets: Record<string, { data: number[][]; N: number }> = {
+	const gridPresets: Record<string, { data: NGrid; N: number }> = {
 		'Example 1': {
 			data: [
 				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -97,22 +105,19 @@
 	};
 
 	const targetPredicates = {
-		'> 0': ([cell]) => cell > 0
-	} as const satisfies Record<string, ([cell, i, j]: [number, number, number]) => boolean>;
+		'> 0': (_, cell) => cell > 0
+	} as const satisfies Record<string, NCGCNOptions['targetPredicate']>;
 
 	const distanceFormulas = {
-		Manhattan: ([i1, j1, i2, j2]) => Math.abs(i1 - i2) + Math.abs(j1 - j2),
-		Euclidean: ([i1, j1, i2, j2]) => Math.sqrt(Math.pow(i1 - i2, 2) + Math.pow(j1 - j2, 2)),
-		Chebyshev: ([i1, j1, i2, j2]) => Math.max(Math.abs(i1 - i2), Math.abs(j1 - j2))
-	} as const satisfies Record<
-		string,
-		([i1, j1, i2, j2]: [number, number, number, number]) => number
-	>;
+		Manhattan: ([i1, j1], [i2, j2]) => Math.abs(i1 - i2) + Math.abs(j1 - j2),
+		Euclidean: ([i1, j1], [i2, j2]) => Math.sqrt(Math.pow(i1 - i2, 2) + Math.pow(j1 - j2, 2)),
+		Chebyshev: ([i1, j1], [i2, j2]) => Math.max(Math.abs(i1 - i2), Math.abs(j1 - j2))
+	} as const satisfies Record<string, NCGCNOptions['distanceFormula']>;
 
 	let current = $state(0);
-	let result = $state({
-		count: 0,
-		effected: <[number, number][]>[]
+	let result = $state<NCGCNResult>({
+		accumulation: 0,
+		effected: []
 	});
 	let A: keyof typeof accumulators = $state('Add One');
 	let T: keyof typeof targetPredicates = $state('> 0');
@@ -154,54 +159,12 @@
 		const percentGreen = ((cell - min) / (max - min)) * 100;
 		return `color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%)`;
 	};
-	const reduceCells = <Result, Cell>(
-		data: Cell[][],
-		callbackfn: (
-			previousValue: Result,
-			currentValue: Cell,
-			currentIndex: [number, number]
-		) => Result,
-		initialValue: Result
-	): Result =>
-		data.reduce(
-			(accRows, row, i) =>
-				row.reduce((accCols, col, j) => callbackfn(accCols, col, [i, j]), accRows),
-			initialValue
-		);
-
-	const countGridCellNeighborhoods = (
-		grid: number[][],
-		N: number,
-		options: {
-			distanceFormula: (pos: [number, number, number, number]) => number;
-			accumulator: (prev: number, cellInfo: [number, number, number]) => number;
-			targetPredicate: (info: [number, number, number]) => boolean;
-		}
-	): { effected: [number, number][]; count: number } => {
-		type Ret = ReturnType<typeof countGridCellNeighborhoods>;
-		const targets: [number, number][] = reduceCells(
-			grid,
-			(prev, cell, [i, j]) => (options.targetPredicate([cell, i, j]) ? [...prev, [i, j]] : prev),
-			<[number, number][]>[]
-		);
-		return reduceCells(
-			grid,
-			({ count, effected }, cell, [i1, j1]) =>
-				targets.find(([i2, j2]) => options.distanceFormula([i1, j1, i2, j2]) <= N)
-					? {
-							count: options.accumulator(count, [cell, i1, j1]),
-							effected: [...effected, [i1, j1] as const]
-						}
-					: { count, effected },
-			<Ret>{ count: 0, effected: [] }
-		);
-	};
-
 	const updateResult = () => {
 		result = countGridCellNeighborhoods(grid.data, grid.N, {
 			distanceFormula: distanceFormulas[D],
 			accumulator: accumulators[A],
-			targetPredicate: targetPredicates[T]
+			targetPredicate: targetPredicates[T],
+			initialAccumulation: 0
 		});
 	};
 
@@ -475,7 +438,7 @@
 		</div>
 	{/if}
 	<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
-		{result.count.toLocaleString()}
+		{result.accumulation.toLocaleString()}
 	</h3>
 
 	<canvas bind:this={canvas} class="my-canvas"></canvas>
