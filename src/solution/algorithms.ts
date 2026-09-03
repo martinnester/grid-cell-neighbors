@@ -55,7 +55,7 @@ const bfs = <Cell>(
 	const visited = new Set<string>(startPos.key());
 	const queue = [startPos];
 	while (queue.length) {
-		const pos = queue.shift()!;
+		const pos = queue.shift()!; //TODO: shift is O(N). Find something faster.
 		const value = grid.get(pos)!;
 		switch (visit({ pos, value })) {
 			case BFSVisitResult.CONTINUE:
