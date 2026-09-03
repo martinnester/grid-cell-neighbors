@@ -19,6 +19,13 @@
 		(acc: number, [cell, i, j]: [number, number, number]) => number
 	>;
 
+	const genRandomGrid = (size: number) => ({
+		data: Array.from({ length: size }).map(() =>
+			Array.from({ length: size }).map(() => (Math.random() > 0.95 ? 50 : 0))
+		),
+		N: 2
+	});
+
 	const gridPresets: Record<string, { data: number[][]; N: number }> = {
 		'Example 1': {
 			data: [
@@ -84,12 +91,9 @@
 			],
 			N: 2
 		},
-		'Big Example': {
-			data: Array.from({ length: 200 }).map(() =>
-				Array.from({ length: 200 }).map(() => (Math.random() > 0.95 ? 50 : 0))
-			),
-			N: 2
-		}
+		'200x200': genRandomGrid(200),
+		'400x400': genRandomGrid(400),
+		'1000x1000': genRandomGrid(1000)
 	};
 
 	const targetPredicates = {
