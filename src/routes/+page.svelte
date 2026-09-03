@@ -6,7 +6,7 @@
 	import MenuIcon from '@lucide/svelte/icons/menu';
 
 	import { useEventListener } from 'runed';
-	import { gridCellNeighborhoods, flattenGrid, Vec2d } from '../solution/algorithms';
+	import { gridCellNeighborhoods, Vec2d } from '../solution/algorithms';
 	import { distanceFormulas, gridPresets, targetPredicates } from '../solution/constants';
 
 	const accumulators = {
@@ -104,7 +104,7 @@
 		const m = getM();
 
 		// display input data:
-		flattenGrid(grid.data).forEach(({ pos, value }) => {
+		grid.data.flatten().forEach(({ pos, value }) => {
 			ctx.fillStyle = getColor(value);
 			ctx.fillRect(pos.x * size, pos.y * size, size, size);
 			ctx.lineWidth = 0.5;

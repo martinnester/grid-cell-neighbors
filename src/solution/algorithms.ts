@@ -22,12 +22,18 @@ export class Vec2d {
 	}
 }
 
-export interface Grid<Cell> {
-	get(pos: Vec2d): Cell | undefined;
-	size: Vec2d;
-	rows(): Generator<{
-		columns(): Generator<Cell>;
-	}>;
+export abstract class Grid<Cell> {
+	abstract get(pos: Vec2d): Cell | undefined;
+	abstract size: Vec2d;
+	*flatten(start: Vec2d = new Vec2d(0, 0), size: Vec2d = this.size): Generator<GridEntry<Cell>> {
+		for (let X = start.x; X < size.x; X++) {
+			for (let Y = start.y; Y < size.y; Y++) {
+				const pos = new Vec2d(X, Y);
+				const value = this.get(pos)!;
+				yield { pos, value };
+			}
+		}
+	}
 }
 
 export type GridEntry<Cell> = {
@@ -76,12 +82,6 @@ const bfs = <Cell>(
 	return false;
 };
 
-export function* flattenGrid<Cell>(data: Grid<Cell>) {
-	yield* data.rows().flatMap(function* (row, i) {
-		yield* row.columns().map((col, j) => ({ pos: new Vec2d(i, j), value: col }));
-	});
-}
-
 export type GridCellNeighborhoodsOptions<Cell> = {
 	grid: Grid<Cell>;
 	N: number;
@@ -94,7 +94,7 @@ export function* gridCellNeighborhoods<Cell>({
 	distanceFormula,
 	targetPredicate
 }: GridCellNeighborhoodsOptions<Cell>) {
-	yield* flattenGrid(grid).filter((entry) =>
+	yield* grid.flatten().filter((entry) =>
 		bfs(grid, entry.pos, (bfsEntry) => {
 			const dist = distanceFormula(entry.pos, bfsEntry.pos);
 			if (dist > N) {

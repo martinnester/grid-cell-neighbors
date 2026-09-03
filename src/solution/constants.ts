@@ -1,29 +1,20 @@
-import { Vec2d, type GridCellNeighborhoodsOptions, type Grid } from './algorithms';
+import { Vec2d, type GridCellNeighborhoodsOptions, Grid } from './algorithms';
 
 export type NGCNOptions = GridCellNeighborhoodsOptions<number>;
 
-class NGrid implements Grid<number> {
+class NGrid extends Grid<number> {
 	readonly data: number[][];
 	readonly size: Vec2d;
-	constructor(data: typeof this.data) {
+	constructor(data: number[][]) {
+		super();
 		this.data = data;
-		this.size = new Vec2d(this.data.length, this.data[0].length);
+		this.size = new Vec2d(this.data[0].length, this.data.length);
 	}
 	get(pos: Vec2d): number | undefined {
 		return this.data[pos.x]?.[pos.y];
 	}
 	set(pos: Vec2d, value: number) {
 		this.data[pos.x][pos.y] = value;
-	}
-	*rows(): Generator<{ columns(): Generator<number> }> {
-		for (const row of this.data) {
-			function* columns() {
-				for (const col of row) {
-					yield col;
-				}
-			}
-			yield { columns };
-		}
 	}
 }
 
