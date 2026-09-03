@@ -123,10 +123,12 @@
 		);
 
 		// display results:
-		result.effected.forEach(([i, j]) => {
-			ctx.fillStyle = '#ffffff4f';
-			ctx.fillRect(j * size, i * size, size, size);
-		});
+		if (dimEffected) {
+			result.effected.forEach(([i, j]) => {
+				ctx.fillStyle = '#ffffff4f';
+				ctx.fillRect(j * size, i * size, size, size);
+			});
+		}
 
 		// user cursor:
 		ctx.fillStyle = getColor(current);
