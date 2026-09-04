@@ -99,9 +99,8 @@
 		const m = getM();
 
 		// display input data:
-		grid.data.flatten().forEach(({ pos, value }) => {
-			ctx.fillStyle = getColor(value);
-			ctx.fillRect(pos.x * size, pos.y * size, size, size);
+		grid.data.draw(ctx, getColor, size);
+		grid.data.flatten().forEach(({ pos }) => {
 			ctx.lineWidth = 0.5;
 			if (
 				x + m.x >= pos.x * size &&

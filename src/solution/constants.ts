@@ -2,8 +2,8 @@ import { Vec2d, type GridCellNeighborhoodsOptions, Grid } from './algorithms';
 
 export type NGCNOptions = GridCellNeighborhoodsOptions<number>;
 
-class NGrid extends Grid<number> {
-	readonly data: number[][];
+class NumberGrid extends Grid<number> {
+	private readonly data: number[][];
 	readonly size: Vec2d;
 	constructor(data: number[][]) {
 		super();
@@ -16,10 +16,16 @@ class NGrid extends Grid<number> {
 	set(pos: Vec2d, value: number) {
 		this.data[pos.x][pos.y] = value;
 	}
+	draw(ctx: CanvasRenderingContext2D, getColor: (value: number) => string, size: number): void {
+		this.flatten().forEach(({ pos, value }) => {
+			ctx.fillStyle = getColor(value);
+			ctx.fillRect(pos.x * size, pos.y * size, size, size);
+		});
+	}
 }
 
 export const genRandomGrid = (size: number) => ({
-	data: new NGrid(
+	data: new NumberGrid(
 		Array.from({ length: size }).map(() =>
 			Array.from({ length: size }).map(() => (Math.random() > 0.9 ? 50 : 0))
 		)
@@ -27,9 +33,9 @@ export const genRandomGrid = (size: number) => ({
 	N: 1
 });
 
-export const gridPresets: Record<string, { data: NGrid; N: number }> = {
+export const gridPresets: Record<string, { data: NumberGrid; N: number }> = {
 	'Example 1': {
-		data: new NGrid([
+		data: new NumberGrid([
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -45,7 +51,7 @@ export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 		N: 3
 	},
 	'Example 2': {
-		data: new NGrid([
+		data: new NumberGrid([
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -61,7 +67,7 @@ export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 		N: 3
 	},
 	'Example 3': {
-		data: new NGrid([
+		data: new NumberGrid([
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -77,7 +83,7 @@ export const gridPresets: Record<string, { data: NGrid; N: number }> = {
 		N: 2
 	},
 	'Example 4': {
-		data: new NGrid([
+		data: new NumberGrid([
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
