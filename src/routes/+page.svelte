@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { Slider, Dialog, Portal, Switch } from '@skeletonlabs/skeleton-svelte';
-	import { onMount, type Snippet } from 'svelte';
+	import { onMount, untrack, type Snippet } from 'svelte';
 	import PinIcon from '@lucide/svelte/icons/pin';
 	import PinOffIcon from '@lucide/svelte/icons/pin-off';
 	import MenuIcon from '@lucide/svelte/icons/menu';
 
 	import { useEventListener } from 'runed';
-	import { gridCellNeighborhoods, Vec2d } from '../solution/algorithms';
+	import { gridCellNeighborhoods, Rectangle, Vec2d, type GridEntry } from '../solution/algorithms';
 	import { distanceFormulas, gridPresets, targetPredicates } from '../solution/constants';
 
 	const accumulators = {
@@ -19,11 +19,8 @@
 	let max = $state(50);
 
 	let current = $state(0);
-	const getDefaultResult = () => ({
-		accumulation: 0,
-		effected: <Array<Vec2d>>[]
-	});
-	let result = $state(getDefaultResult());
+	let effected = $state([] as GridEntry<number>[]);
+	let count = $derived(effected.reduce((acc, { value }) => accumulators[A](acc, value), 0));
 	let A: keyof typeof accumulators = $state('Add One');
 	let T: keyof typeof targetPredicates = $state('> 0');
 	let D: keyof typeof distanceFormulas = $state('Manhattan');
@@ -64,19 +61,17 @@
 		const percentGreen = ((cell - min) / (max - min)) * 100;
 		return `color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%)`;
 	};
-	const updateResult = () => {
-		result = gridCellNeighborhoods({
-			grid: grid.data,
-			N: grid.N,
-			distanceFormula: distanceFormulas[D],
-			targetPredicate: targetPredicates[T]
-		}).reduce(
-			({ accumulation, effected }, { pos, value }) => ({
-				accumulation: accumulators[A](accumulation, value),
-				effected: [...effected, pos]
-			}),
-			getDefaultResult()
-		);
+	const updateResult = (rectangle?: Rectangle) => {
+		effected = [
+			...untrack(() => (rectangle ? effected.filter(({ pos }) => !rectangle.contains(pos)) : [])),
+			...gridCellNeighborhoods({
+				grid: grid.data,
+				N: grid.N,
+				distanceFormula: distanceFormulas[D],
+				targetPredicate: targetPredicates[T],
+				rectangle
+			})
+		];
 	};
 
 	const draw = () => {
@@ -118,7 +113,8 @@
 				if (mouseDown) {
 					if (grid.data.get(pos) !== current) {
 						grid.data.set(pos, current);
-						updateResult();
+						const v = new Vec2d(1, 1);
+						updateResult(new Rectangle(pos.sub(v.scale(grid.N)), v.scale(grid.N * 2 + 1)));
 					}
 				}
 			}
@@ -126,7 +122,7 @@
 
 		// display results:
 		if (dimEffected) {
-			result.effected.forEach((pos) => {
+			effected.forEach(({ pos }) => {
 				ctx.fillStyle = '#ffffff4f';
 				ctx.fillRect(pos.x * size, pos.y * size, size, size);
 			});
@@ -242,7 +238,7 @@
 				placeholder="Input"
 				bind:value={grid.N}
 				min="0"
-				onchange={updateResult}
+				onchange={() => updateResult()}
 			/>
 		</label>
 		<label class="label">
@@ -347,7 +343,7 @@
 		</div>
 	{/if}
 	<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
-		{result.accumulation.toLocaleString()}
+		{count.toLocaleString()}
 	</h3>
 
 	<canvas bind:this={canvas} class="my-canvas"></canvas>

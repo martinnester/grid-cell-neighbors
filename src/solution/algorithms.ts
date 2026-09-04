@@ -1,4 +1,6 @@
 export class Vec2d {
+	static ZERO = new Vec2d(0, 0);
+	static ONE = new Vec2d(1, 1);
 	readonly x: number;
 	readonly y: number;
 	constructor(x: number, y: number) {
@@ -20,14 +22,50 @@ export class Vec2d {
 	bounded(size: Vec2d) {
 		return this.x >= 0 && this.y >= 0 && this.x < size.x && this.y < size.y;
 	}
+	maximums(that: Vec2d) {
+		return new Vec2d(Math.max(this.x, that.x), Math.max(this.y, that.y));
+	}
+	minimums(that: Vec2d) {
+		return new Vec2d(Math.min(this.x, that.x), Math.min(this.y, that.y));
+	}
+}
+
+export class Rectangle {
+	readonly start: Vec2d;
+	readonly size: Vec2d;
+	constructor(start: typeof this.start, size: typeof this.size) {
+		this.start = start;
+		this.size = size;
+	}
+	contains(pos: Vec2d): boolean {
+		return (
+			pos.x >= this.start.x &&
+			pos.y >= this.start.y &&
+			pos.x < this.start.x + this.size.x &&
+			pos.y < this.start.y + this.size.y
+		);
+	}
+	clamp(that: Rectangle): Rectangle {
+		console.log({ thiss: this, that });
+		const max = this.start.maximums(that.start);
+		return new Rectangle(
+			max,
+			this.start.add(this.size).minimums(that.start.add(that.size)).sub(max)
+		);
+	}
 }
 
 export abstract class Grid<Cell> {
 	abstract get(pos: Vec2d): Cell | undefined;
 	abstract size: Vec2d;
-	*flatten(start: Vec2d = new Vec2d(0, 0), size: Vec2d = this.size): Generator<GridEntry<Cell>> {
-		for (let X = start.x; X < size.x; X++) {
-			for (let Y = start.y; Y < size.y; Y++) {
+	get rectangle(): Rectangle {
+		return new Rectangle(Vec2d.ZERO, this.size);
+	}
+	*flatten(
+		{ start, size }: Rectangle = new Rectangle(new Vec2d(0, 0), this.size)
+	): Generator<GridEntry<Cell>> {
+		for (let X = start.x; X < start.x + size.x; X++) {
+			for (let Y = start.y; Y < start.y + size.y; Y++) {
 				const pos = new Vec2d(X, Y);
 				const value = this.get(pos)!;
 				yield { pos, value };
@@ -87,23 +125,33 @@ export type GridCellNeighborhoodsOptions<Cell> = {
 	N: number;
 	distanceFormula: (from: Vec2d, to: Vec2d) => number;
 	targetPredicate: (entry: GridEntry<Cell>) => boolean;
+	rectangle?: Rectangle;
 };
 export function* gridCellNeighborhoods<Cell>({
 	grid,
 	N,
 	distanceFormula,
-	targetPredicate
+	targetPredicate,
+	rectangle
 }: GridCellNeighborhoodsOptions<Cell>) {
-	yield* grid.flatten().filter((entry) =>
-		bfs(grid, entry.pos, (bfsEntry) => {
-			const dist = distanceFormula(entry.pos, bfsEntry.pos);
-			if (dist > N) {
-				return BFSVisitResult.PRUNE;
+	yield* grid
+		.flatten(rectangle?.clamp(grid.rectangle))
+		.map((x) => {
+			if (rectangle) {
+				console.log(x);
 			}
-			if (targetPredicate(bfsEntry)) {
-				return BFSVisitResult.FOUND;
-			}
-			return BFSVisitResult.CONTINUE;
+			return x;
 		})
-	);
+		.filter((entry) =>
+			bfs(grid, entry.pos, (bfsEntry) => {
+				const dist = distanceFormula(entry.pos, bfsEntry.pos);
+				if (dist > N) {
+					return BFSVisitResult.PRUNE;
+				}
+				if (targetPredicate(bfsEntry)) {
+					return BFSVisitResult.FOUND;
+				}
+				return BFSVisitResult.CONTINUE;
+			})
+		);
 }
