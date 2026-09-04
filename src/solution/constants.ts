@@ -2,7 +2,7 @@ import { Vec2d, type GridCellNeighborhoodsOptions, Grid } from './algorithms';
 
 export type NGCNOptions = GridCellNeighborhoodsOptions<number>;
 
-class NumberGrid extends Grid<number> {
+export class NumberGrid extends Grid<number> {
 	private readonly data: number[][];
 	readonly size: Vec2d;
 	constructor(data: number[][]) {
@@ -24,6 +24,83 @@ class NumberGrid extends Grid<number> {
 	}
 }
 
+export class ImageGrid extends Grid<number> {
+	draw(ctx: CanvasRenderingContext2D, getColor: (value: number) => string, size: number): void {
+		ctx.save();
+		ctx.imageSmoothingEnabled = false;
+		ctx.scale(size, size);
+		for (const [x, line] of this.data.entries()) {
+			for (const [y, image] of line.entries()) {
+				if (image.bitmap) {
+					ctx.drawImage(image.bitmap, x * ImageGrid.IMAGE_SIZE, y * ImageGrid.IMAGE_SIZE);
+				}
+			}
+		}
+		ctx.restore();
+	}
+	private readonly data: { data: ImageData; bitmap: ImageBitmap | undefined }[][];
+	private static IMAGE_SIZE = 50;
+	private static VALUE_OFFSET = 100;
+	private xLength: number;
+	private yLength: number;
+
+	readonly size: Vec2d;
+	constructor(data: number[][]) {
+		super();
+		this.size = new Vec2d(data[0].length, data.length);
+		const xQuotient = Math.trunc(this.size.x / ImageGrid.IMAGE_SIZE);
+		const xRemainder = this.size.x % ImageGrid.IMAGE_SIZE;
+		this.xLength = xQuotient + 1;
+		const yQuotient = Math.trunc(this.size.y / ImageGrid.IMAGE_SIZE);
+		const yRemainder = this.size.y % ImageGrid.IMAGE_SIZE;
+		this.yLength = yQuotient + 1;
+		this.data = Array.from({ length: this.xLength }).map((_, x) =>
+			Array.from({ length: this.yLength }).map((_, y) => {
+				const imageData = new ImageData(
+					new Uint8ClampedArray(
+						data
+							.slice(x * ImageGrid.IMAGE_SIZE, ImageGrid.IMAGE_SIZE)
+							.flatMap((foo) =>
+								foo
+									.slice(y * ImageGrid.IMAGE_SIZE, ImageGrid.IMAGE_SIZE)
+									.flatMap((value) => [value + ImageGrid.VALUE_OFFSET, 0, 0, 255])
+							)
+					),
+					x === xQuotient ? xRemainder : ImageGrid.IMAGE_SIZE,
+					y === yQuotient ? yRemainder : ImageGrid.IMAGE_SIZE,
+					{
+						colorSpace: 'srgb',
+						pixelFormat: 'rgba-unorm8'
+					}
+				);
+				const res = {
+					data: imageData,
+					bitmap: <ImageBitmap | undefined>undefined
+				};
+				createImageBitmap(imageData).then((x) => (res.bitmap = x));
+				return res;
+			})
+		);
+	}
+	get(pos: Vec2d): number | undefined {
+		const xQuotient = Math.trunc(pos.x / ImageGrid.IMAGE_SIZE);
+		const xRemainder = pos.x % ImageGrid.IMAGE_SIZE;
+		const yQuotient = Math.trunc(pos.y / ImageGrid.IMAGE_SIZE);
+		const yRemainder = pos.y % ImageGrid.IMAGE_SIZE;
+		const image = this.data[xQuotient][yQuotient];
+		return image.data.data[(yRemainder * image.data.width + xRemainder) * 4];
+	}
+	set(pos: Vec2d, value: number) {
+		const xQuotient = Math.trunc(pos.x / ImageGrid.IMAGE_SIZE);
+		const xRemainder = pos.x % ImageGrid.IMAGE_SIZE;
+		const yQuotient = Math.trunc(pos.y / ImageGrid.IMAGE_SIZE);
+		const yRemainder = pos.y % ImageGrid.IMAGE_SIZE;
+		const image = this.data[xQuotient][yQuotient];
+		image.data.data[(yRemainder * image.data.width + xRemainder) * 4] =
+			value + ImageGrid.VALUE_OFFSET;
+	}
+}
+
 export const genRandomGrid = (size: number) => ({
 	data: new NumberGrid(
 		Array.from({ length: size }).map(() =>
@@ -32,77 +109,6 @@ export const genRandomGrid = (size: number) => ({
 	),
 	N: 1
 });
-
-export const gridPresets: Record<string, { data: NumberGrid; N: number }> = {
-	'Example 1': {
-		data: new NumberGrid([
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		]),
-		N: 3
-	},
-	'Example 2': {
-		data: new NumberGrid([
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		]),
-		N: 3
-	},
-	'Example 3': {
-		data: new NumberGrid([
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		]),
-		N: 2
-	},
-	'Example 4': {
-		data: new NumberGrid([
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
-			[0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		]),
-		N: 2
-	},
-	'100x100': genRandomGrid(100),
-	'200x200': genRandomGrid(200),
-	'400x400': genRandomGrid(400),
-	'1000x1000': genRandomGrid(1000)
-};
 
 export const targetPredicates = {
 	'> 0': ({ value }) => value > 0

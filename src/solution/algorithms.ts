@@ -62,6 +62,7 @@ export abstract class Grid<Cell> {
 		size: number
 	): void;
 	abstract get(pos: Vec2d): Cell | undefined;
+	abstract set(pos: Vec2d, value: number): void;
 	abstract readonly size: Vec2d;
 	get rectangle(): Rectangle {
 		return new Rectangle(Vec2d.ZERO, this.size);
