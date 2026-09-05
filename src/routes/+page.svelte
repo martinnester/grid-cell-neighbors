@@ -1,120 +1,49 @@
 <script lang="ts">
 	import { Slider, Dialog, Portal, Switch } from '@skeletonlabs/skeleton-svelte';
-	import { onMount, untrack, type Snippet } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
 	import PinIcon from '@lucide/svelte/icons/pin';
 	import PinOffIcon from '@lucide/svelte/icons/pin-off';
 	import MenuIcon from '@lucide/svelte/icons/menu';
 
 	import { useEventListener } from 'runed';
+	import { Grid, type GridOptions } from '../solution/algorithms.svelte';
 	import {
-		Grid,
-		gridCellNeighborhoods,
-		Rectangle,
-		Vec2d,
-		type GridEntry
-	} from '../solution/algorithms';
-	import {
+		accumulators,
 		distanceFormulas,
 		genRandomGrid,
-		ImageGrid,
 		NumberGrid,
-		targetPredicates
-	} from '../solution/constants';
-
-	const gridPresets: Record<string, { data: Grid<number>; N: number }> = $state({
-		'Example 1': {
-			data: new NumberGrid([
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-			]),
-			N: 3
-		},
-		'Example 2': {
-			data: new NumberGrid([
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-			]),
-			N: 3
-		},
-		'Example 3': {
-			data: new NumberGrid([
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-			]),
-			N: 2
-		},
-		'Example 4': {
-			data: new NumberGrid([
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
-				[0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-			]),
-			N: 2
-		},
-		'100x100': genRandomGrid(100),
-		'200x200': genRandomGrid(200),
-		'400x400': genRandomGrid(400),
-		'1000x1000': genRandomGrid(1000)
-	});
-
-	const accumulators = {
-		'Add One': (prev) => prev + 1,
-		'Add Value': (prev, current) => prev + current
-	} as const satisfies Record<string, (prev: number, current: number) => number>;
+		targetPredicates,
+		type NumberGridCell
+	} from '../solution/constants.svelte';
 
 	let pinned = $state(true);
 	let min = $state(-50);
 	let max = $state(50);
 
 	let current = $state(0);
-	let effected = $state([] as GridEntry<number>[]);
-	let count = $derived(effected.reduce((acc, { value }) => accumulators[A](acc, value), 0));
 	let A: keyof typeof accumulators = $state('Add One');
 	let T: keyof typeof targetPredicates = $state('> 0');
 	let D: keyof typeof distanceFormulas = $state('Manhattan');
-	let P: keyof typeof gridPresets = $state('Example 1');
+	let P: keyof NonNullable<typeof gridPresets> = $state('Example 1');
+	let N: number = $state(3);
 
 	let dimEffected = $state(true);
-
+	const getColor = (cell: number) => {
+		const percentGreen = ((cell - min) / (max - min)) * 100;
+		return `color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%)`;
+	};
+	let gridPresets: Record<string, Grid<NumberGridCell>> | undefined = $state({});
 	let grid = $derived(gridPresets[P]);
 
 	let canvas: HTMLCanvasElement | null = $state(null);
 	let canvasParent: HTMLDivElement | null = $state(null);
+
+	const getOptions: () => GridOptions<NumberGridCell> = () => ({
+		N,
+		targetPredicate: targetPredicates[T],
+		distanceFormula: distanceFormulas[D],
+		accumulator: accumulators[A]
+	});
 
 	// The following animations are optional.
 	// These may also be included inline.
@@ -140,22 +69,6 @@
 			y: (mouse.y * window.devicePixelRatio) / z
 		};
 	};
-	const getColor = (cell: number) => {
-		const percentGreen = ((cell - min) / (max - min)) * 100;
-		return `color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%)`;
-	};
-	const updateResult = (rectangle?: Rectangle) => {
-		effected = [
-			...untrack(() => (rectangle ? effected.filter(({ pos }) => !rectangle.contains(pos)) : [])),
-			...gridCellNeighborhoods({
-				grid: grid.data,
-				N: grid.N,
-				distanceFormula: distanceFormulas[D],
-				targetPredicate: targetPredicates[T],
-				rectangle
-			})
-		];
-	};
 
 	const draw = () => {
 		// nullish checks:
@@ -168,6 +81,9 @@
 		const ctx = canvas.getContext('2d');
 		if (!ctx) {
 			throw new Error('Could not get CanvasRenderingContext2D');
+		}
+		if (!grid) {
+			throw new Error('no grid to draw');
 		}
 
 		// resize (TO-DO: just put in ResizeObserver?)
@@ -182,33 +98,26 @@
 		const m = getM();
 
 		// display input data:
-		grid.data.draw(ctx, getColor, size);
-		grid.data.flatten().forEach(({ pos }) => {
-			ctx.lineWidth = 0.5;
+		ctx.save();
+		ctx.scale(size, size);
+		grid.draw(ctx);
+		ctx.lineWidth = 0.1;
+		grid.flatten().forEach(({ pos }) => {
 			if (
 				x + m.x >= pos.x * size &&
 				x + m.x <= pos.x * size + size &&
 				y + m.y >= pos.y * size &&
 				y + m.y <= pos.y * size + size
 			) {
-				ctx.strokeRect(pos.x * size, pos.y * size, size, size);
+				ctx.strokeRect(pos.x, pos.y, 1, 1);
 				if (mouseDown) {
-					if (grid.data.get(pos) !== current) {
-						grid.data.set(pos, current);
-						const v = new Vec2d(1, 1);
-						updateResult(new Rectangle(pos.sub(v.scale(grid.N)), v.scale(grid.N * 2 + 1)));
+					if (grid.get(pos)?.value !== current) {
+						grid.set(pos, current);
 					}
 				}
 			}
 		});
-
-		// display results:
-		if (dimEffected) {
-			effected.forEach(({ pos }) => {
-				ctx.fillStyle = '#ffffff4f';
-				ctx.fillRect(pos.x * size, pos.y * size, size, size);
-			});
-		}
+		ctx.restore();
 
 		// user cursor:
 		ctx.fillStyle = getColor(current);
@@ -249,30 +158,83 @@
 			const rect = canvas.getBoundingClientRect();
 			mouse.x = e.clientX - rect.left;
 			mouse.y = e.clientY - rect.top;
-			// console.log(mouse.x,mouse.y)
 		}
 	);
-	$effect(() => {
-		updateResult();
-	});
 	onMount(() => {
-		new Worker(new URL('./worker.ts', import.meta.url));
-		gridPresets['Image Grid'] = {
-			data: new ImageGrid([
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-				[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-			]),
-			N: 2
+		gridPresets = {
+			'Example 1': new NumberGrid(
+				[
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+				],
+				getColor,
+				getOptions
+			),
+			'Example 2': new NumberGrid(
+				[
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+				],
+				getColor,
+				getOptions
+			),
+			'Example 3': new NumberGrid(
+				[
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+				],
+				getColor,
+				getOptions
+			),
+			'Example 4': new NumberGrid(
+				[
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
+					[0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+				],
+				getColor,
+				getOptions
+			),
+			'100x100': new NumberGrid(genRandomGrid(100), getColor, getOptions),
+			'200x200': new NumberGrid(genRandomGrid(200), getColor, getOptions),
+			'400x400': new NumberGrid(genRandomGrid(400), getColor, getOptions)
 		};
+		new Worker(new URL('./worker.ts', import.meta.url));
 		requestAnimationFrame(draw);
 	});
 </script>
@@ -304,7 +266,7 @@
 {/snippet}
 {#snippet presetSelector()}
 	<select class="select" bind:value={P}>
-		{#each Object.entries(gridPresets) as [k] (k)}
+		{#each Object.entries(gridPresets ?? {}) as [k] (k)}
 			<option value={k}>{k}</option>
 		{/each}
 	</select>
@@ -330,14 +292,9 @@
 		</label>
 		<label class="label">
 			<span class="label-text">Blast Radius <span class="badge preset-filled-brand">N</span></span>
-			<input
-				class="input"
-				type="number"
-				placeholder="Input"
-				bind:value={grid.N}
-				min="0"
-				onchange={() => updateResult()}
-			/>
+			{#if grid}
+				<input class="input" type="number" placeholder="Input" bind:value={N} min="0" />
+			{/if}
 		</label>
 		<label class="label">
 			<span class="label-text"
@@ -440,9 +397,11 @@
 			{@render slider()}
 		</div>
 	{/if}
-	<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
-		{count.toLocaleString()}
-	</h3>
+	{#if grid}
+		<h3 class="syncopate-bold absolute top-4 right-4 flex flex-row gap-8 h3">
+			{grid.score.toLocaleString()}
+		</h3>
+	{/if}
 
 	<canvas bind:this={canvas} class="my-canvas"></canvas>
 </div>
