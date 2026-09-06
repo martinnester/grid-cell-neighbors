@@ -320,22 +320,7 @@
 			<Switch.HiddenInput />
 		</Switch>
 		<div class="space-y-2">
-			<h3 class="h5">Grid</h3>
-			<div class="flex flex-row gap-4">
-				<label class="label">
-					<span class="label-text">Cell Minimum</span>
-					<input class="input" type="number" placeholder="Input" bind:value={min} />
-				</label>
-				<label class="label">
-					<span class="label-text">Cell Maximum</span>
-					<input class="input" type="number" placeholder="Input" bind:value={max} />
-				</label>
-				<label class="label">
-					<span class="label-text">Cell Current</span>
-					<input class="input" type="number" placeholder="Input" bind:value={current} />
-				</label>
-			</div>
-
+			<h3 class="h5">Paint Cell Value</h3>
 			{@render slider()}
 		</div>
 		<div
