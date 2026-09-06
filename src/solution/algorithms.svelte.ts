@@ -67,7 +67,7 @@ enum BFSVisitResult {
 	PRUNE
 }
 export abstract class Grid<Cell> {
-	abstract draw(ctx: CanvasRenderingContext2D): void;
+	abstract draw(ctx: CanvasRenderingContext2D, dimEffected: boolean): void;
 	abstract get(pos: Vec2d): Cell | undefined;
 	abstract set(pos: Vec2d, value: number): void;
 	abstract readonly score: number;

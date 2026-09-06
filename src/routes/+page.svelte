@@ -86,7 +86,7 @@
 		// display input data:
 		ctx.save();
 		ctx.scale(size, size);
-		grid.draw(ctx);
+		grid.draw(ctx, dimEffected);
 		ctx.lineWidth = 0.1;
 		grid.flatten().forEach(({ pos }) => {
 			if (

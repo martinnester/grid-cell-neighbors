@@ -112,11 +112,13 @@ export class NumberGrid extends Grid<NumberGridCell> {
 			}
 		})();
 	}
-	draw(ctx: CanvasRenderingContext2D): void {
+	draw(ctx: CanvasRenderingContext2D, dimEffected: boolean): void {
 		const smoothingEnabledSave = ctx.imageSmoothingEnabled;
 		ctx.imageSmoothingEnabled = false;
 		ctx.drawImage(this.canvas, 0, 0);
-		ctx.drawImage(this.effectsCanvas, 0, 0);
+		if (dimEffected) {
+			ctx.drawImage(this.effectsCanvas, 0, 0);
+		}
 		ctx.imageSmoothingEnabled = smoothingEnabledSave;
 	}
 }
