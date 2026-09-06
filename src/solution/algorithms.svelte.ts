@@ -66,25 +66,15 @@ enum BFSVisitResult {
 	CONTINUE,
 	PRUNE
 }
-export interface GridOptions<Cell> {
-	N: number;
-	distanceFormula: (from: Vec2d, to: Vec2d) => number;
-	targetPredicate: (entry: GridEntry<Cell>) => boolean;
-	accumulator: {
-		add: (prev: number, current: Cell) => number;
-		subtract: (prev: number, current: Cell) => number;
-	};
-}
 export abstract class Grid<Cell> {
 	abstract draw(ctx: CanvasRenderingContext2D): void;
 	abstract get(pos: Vec2d): Cell | undefined;
 	abstract set(pos: Vec2d, value: number): void;
 	abstract readonly score: number;
 	abstract readonly size: Vec2d;
-	readonly options: GridOptions<Cell>;
-	constructor(options: () => GridOptions<Cell>) {
-		this.options = $derived(options());
-	}
+	abstract N: number;
+	protected abstract distanceFormula: (from: Vec2d, to: Vec2d) => number;
+	protected abstract targetPredicate: (entry: GridEntry<Cell>) => boolean;
 	get rectangle(): Rectangle {
 		return new Rectangle(Vec2d.ZERO, this.size);
 	}
@@ -141,11 +131,11 @@ export abstract class Grid<Cell> {
 	protected *update(rectangle: Rectangle) {
 		yield* this.flatten(rectangle?.clamp(rectangle)).filter((entry) => {
 			const res = this.bfs(entry.pos, (bfsEntry) => {
-				const dist = this.options.distanceFormula(entry.pos, bfsEntry.pos);
-				if (dist > this.options.N) {
+				const dist = this.distanceFormula(entry.pos, bfsEntry.pos);
+				if (dist > this.N) {
 					return BFSVisitResult.PRUNE;
 				}
-				if (bfsEntry !== undefined && this.options.targetPredicate(bfsEntry)) {
+				if (bfsEntry !== undefined && this.targetPredicate(bfsEntry)) {
 					return BFSVisitResult.FOUND;
 				}
 				return BFSVisitResult.CONTINUE;

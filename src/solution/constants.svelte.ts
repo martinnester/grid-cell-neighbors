@@ -1,8 +1,18 @@
 import { watch } from 'runed';
-import { Vec2d, type GridOptions, Grid, Rectangle } from './algorithms.svelte';
+import { Vec2d, Grid, Rectangle, type GridEntry } from './algorithms.svelte';
 
 export type NumberGridCell = { value: number; effected: boolean };
 export class NumberGrid extends Grid<NumberGridCell> {
+	A: keyof typeof accumulators;
+	T: keyof typeof targetPredicates;
+	D: keyof typeof distanceFormulas;
+	N: number;
+	protected distanceFormula: (from: Vec2d, to: Vec2d) => number;
+	protected targetPredicate: (entry: GridEntry<NumberGridCell>) => boolean;
+	private accumulator: {
+		add: (prev: number, current: NumberGridCell) => number;
+		subtract: (prev: number, current: NumberGridCell) => number;
+	};
 	private _score: number = $state(0);
 	private readonly data: { value: number; effected: boolean }[][];
 	private readonly canvas: OffscreenCanvas;
@@ -15,44 +25,50 @@ export class NumberGrid extends Grid<NumberGridCell> {
 	constructor(
 		data: number[][],
 		getColor: (cell: number) => string,
-		options: () => GridOptions<NumberGridCell>
+		A: keyof typeof accumulators,
+		T: keyof typeof targetPredicates,
+		D: keyof typeof distanceFormulas,
+		N: number
 	) {
-		super(options);
-
+		super();
+		this.A = $state(A);
+		this.T = $state(T);
+		this.D = $state(D);
+		this.N = $state(N);
+		this.distanceFormula = $derived(distanceFormulas[this.D]);
+		this.targetPredicate = $derived(targetPredicates[this.T]);
+		this.accumulator = $derived(accumulators[this.A]);
 		this.data = data.map((x) => x.map((y) => ({ value: y, effected: false })));
 		this.getColor = getColor;
 		this.size = new Vec2d(this.data[0].length, this.data.length);
 		this.canvas = new OffscreenCanvas(this.size.x, this.size.y);
 		this.effectsCanvas = new OffscreenCanvas(this.size.x, this.size.y);
-		watch(
-			() => this.options,
-			() => {
-				this._score = 0;
-				(() => {
-					const ctx = this.canvas.getContext('2d');
-					if (ctx) {
-						ctx.clearRect(...this.rectangle.tuple);
-						this.flatten().forEach(({ pos, value: { value } }) => {
-							ctx.fillStyle = this.getColor(value);
-							ctx.fillRect(pos.x, pos.y, 1, 1);
-						});
-					}
-				})();
+		watch([() => this.A, () => this.T, () => this.D, () => this.N, () => getColor(0)], () => {
+			this._score = 0;
+			(() => {
+				const ctx = this.canvas.getContext('2d');
+				if (ctx) {
+					ctx.clearRect(...this.rectangle.tuple);
+					this.flatten().forEach(({ pos, value: { value } }) => {
+						ctx.fillStyle = this.getColor(value);
+						ctx.fillRect(pos.x, pos.y, 1, 1);
+					});
+				}
+			})();
 
-				(() => {
-					const ctx = this.effectsCanvas.getContext('2d');
-					if (ctx) {
-						ctx.fillStyle = '#ffffff4f';
-						ctx.clearRect(...this.rectangle.tuple);
-						this.update(this.rectangle).forEach(({ pos, value }) => {
-							ctx.fillRect(pos.x, pos.y, 1, 1);
-							this.data[pos.x][pos.y].effected = true;
-							this._score = this.options.accumulator.add(this._score, value);
-						});
-					}
-				})();
-			}
-		);
+			(() => {
+				const ctx = this.effectsCanvas.getContext('2d');
+				if (ctx) {
+					ctx.fillStyle = '#ffffff4f';
+					ctx.clearRect(...this.rectangle.tuple);
+					this.update(this.rectangle).forEach(({ pos, value }) => {
+						ctx.fillRect(pos.x, pos.y, 1, 1);
+						this.data[pos.x][pos.y].effected = true;
+						this._score = this.accumulator.add(this._score, value);
+					});
+				}
+			})();
+		});
 	}
 	get(pos: Vec2d) {
 		return this.data[pos.x]?.[pos.y];
@@ -71,15 +87,15 @@ export class NumberGrid extends Grid<NumberGridCell> {
 			if (ctx) {
 				ctx.fillStyle = '#ffffff4f';
 				const rectangle = new Rectangle(
-					pos.sub(Vec2d.ONE.scale(this.options.N)),
-					Vec2d.ONE.scale(this.options.N * 2 + 1)
+					pos.sub(Vec2d.ONE.scale(this.N)),
+					Vec2d.ONE.scale(this.N * 2 + 1)
 				);
 				console.log('before revert', this._score);
 				this.flatten(rectangle.clamp(new Rectangle(Vec2d.ZERO, this.size))).forEach(
 					({ pos, value }) => {
 						console.log(JSON.stringify({ pos, value }));
 						if (value.effected) {
-							this._score = this.options.accumulator.subtract(this.score, value);
+							this._score = this.accumulator.subtract(this.score, value);
 						}
 						this.data[pos.x][pos.y].effected = false;
 					}
@@ -90,7 +106,7 @@ export class NumberGrid extends Grid<NumberGridCell> {
 					console.log(JSON.stringify({ pos, value }));
 					this.data[pos.x][pos.y].effected = true;
 					ctx.fillRect(pos.x, pos.y, 1, 1);
-					this._score = this.options.accumulator.add(this.score, value);
+					this._score = this.accumulator.add(this.score, value);
 				});
 				console.log('after add', this._score);
 			}
@@ -112,13 +128,13 @@ export const genRandomGrid = (size: number) =>
 
 export const targetPredicates = {
 	'> 0': ({ value: { value } }) => value > 0
-} as const satisfies Record<string, GridOptions<NumberGridCell>['targetPredicate']>;
+} as const satisfies Record<string, NumberGrid['targetPredicate']>;
 
 export const distanceFormulas = {
 	Manhattan: (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y),
 	Euclidean: (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2)),
 	Chebyshev: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
-} as const satisfies Record<string, GridOptions<NumberGridCell>['distanceFormula']>;
+} as const satisfies Record<string, NumberGrid['distanceFormula']>;
 
 export const accumulators = {
 	'Add One': {
@@ -129,4 +145,4 @@ export const accumulators = {
 		add: (prev, { value }) => prev + value,
 		subtract: (prev, { value }) => prev - value
 	}
-} as const satisfies Record<string, GridOptions<NumberGridCell>['accumulator']>;
+} as const satisfies Record<string, NumberGrid['accumulator']>;

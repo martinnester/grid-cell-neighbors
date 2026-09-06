@@ -6,44 +6,30 @@
 	import MenuIcon from '@lucide/svelte/icons/menu';
 
 	import { useEventListener } from 'runed';
-	import { Grid, type GridOptions } from '../solution/algorithms.svelte';
 	import {
 		accumulators,
 		distanceFormulas,
 		genRandomGrid,
 		NumberGrid,
-		targetPredicates,
-		type NumberGridCell
+		targetPredicates
 	} from '../solution/constants.svelte';
 
 	let pinned = $state(true);
 	let min = $state(-50);
 	let max = $state(50);
-
 	let current = $state(0);
-	let A: keyof typeof accumulators = $state('Add One');
-	let T: keyof typeof targetPredicates = $state('> 0');
-	let D: keyof typeof distanceFormulas = $state('Manhattan');
 	let P: keyof NonNullable<typeof gridPresets> = $state('Example 1');
-	let N: number = $state(3);
 
 	let dimEffected = $state(true);
 	const getColor = (cell: number) => {
 		const percentGreen = ((cell - min) / (max - min)) * 100;
 		return `color-mix(in lch, #ff0000 ${100 - percentGreen}%, #00ff00 ${percentGreen}%)`;
 	};
-	let gridPresets: Record<string, Grid<NumberGridCell>> | undefined = $state({});
+	let gridPresets: Record<string, NumberGrid> | undefined = $state({});
 	let grid = $derived(gridPresets[P]);
 
 	let canvas: HTMLCanvasElement | null = $state(null);
 	let canvasParent: HTMLDivElement | null = $state(null);
-
-	const getOptions: () => GridOptions<NumberGridCell> = () => ({
-		N,
-		targetPredicate: targetPredicates[T],
-		distanceFormula: distanceFormulas[D],
-		accumulator: accumulators[A]
-	});
 
 	// The following animations are optional.
 	// These may also be included inline.
@@ -177,7 +163,10 @@
 					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 				],
 				getColor,
-				getOptions
+				'Add One',
+				'> 0',
+				'Manhattan',
+				3
 			),
 			'Example 2': new NumberGrid(
 				[
@@ -194,7 +183,10 @@
 					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 				],
 				getColor,
-				getOptions
+				'Add One',
+				'> 0',
+				'Manhattan',
+				3
 			),
 			'Example 3': new NumberGrid(
 				[
@@ -211,7 +203,10 @@
 					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 				],
 				getColor,
-				getOptions
+				'Add One',
+				'> 0',
+				'Manhattan',
+				2
 			),
 			'Example 4': new NumberGrid(
 				[
@@ -228,11 +223,12 @@
 					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 				],
 				getColor,
-				getOptions
+				'Add One',
+				'> 0',
+				'Manhattan',
+				2
 			),
-			'100x100': new NumberGrid(genRandomGrid(100), getColor, getOptions),
-			'200x200': new NumberGrid(genRandomGrid(200), getColor, getOptions),
-			'400x400': new NumberGrid(genRandomGrid(400), getColor, getOptions)
+			'400x400': new NumberGrid(genRandomGrid(400), getColor, 'Add Value', '> 0', 'Euclidean', 5)
 		};
 		new Worker(new URL('./worker.ts', import.meta.url));
 		requestAnimationFrame(draw);
@@ -277,85 +273,87 @@
 		{@render action()}
 	</header>
 	{@render presetSelector()}
-
-	<div class="space-y-2">
-		<h3 class="h5">Algorithm Options</h3>
-		<label class="label">
-			<span class="label-text"
-				>Distance Formula <span class="badge preset-filled-brand">D</span></span
-			>
-			<select class="select" bind:value={D}>
-				{#each Object.entries(distanceFormulas) as [k] (k)}
-					<option value={k}>{k}</option>
-				{/each}
-			</select>
-		</label>
-		<label class="label">
-			<span class="label-text">Blast Radius <span class="badge preset-filled-brand">N</span></span>
-			{#if grid}
-				<input class="input" type="number" placeholder="Input" bind:value={N} min="0" />
-			{/if}
-		</label>
-		<label class="label">
-			<span class="label-text"
-				>Target Predicate <span class="badge preset-filled-brand">T</span></span
-			>
-			<select class="select" bind:value={T}>
-				{#each Object.entries(targetPredicates) as [k] (k)}
-					<option value={k}>{k}</option>
-				{/each}
-			</select>
-		</label>
-		<label class="label">
-			<span class="label-text">Accumulator <span class="badge preset-filled-brand">A</span></span>
-			<select class="select" bind:value={A}>
-				{#each Object.entries(accumulators) as [k] (k)}
-					<option value={k}>{k}</option>
-				{/each}
-			</select>
-		</label>
-	</div>
-	<Switch checked={dimEffected} onCheckedChange={(details) => (dimEffected = details.checked)}>
-		<Switch.Control>
-			<Switch.Thumb />
-		</Switch.Control>
-		<Switch.Label>Dim Effected</Switch.Label>
-		<Switch.HiddenInput />
-	</Switch>
-	<div class="space-y-2">
-		<h3 class="h5">Grid</h3>
-		<div class="flex flex-row gap-4">
+	{#if grid}
+		<div class="space-y-2">
+			<h3 class="h5">Algorithm Options</h3>
 			<label class="label">
-				<span class="label-text">Cell Minimum</span>
-				<input class="input" type="number" placeholder="Input" bind:value={min} />
+				<span class="label-text"
+					>Distance Formula <span class="badge preset-filled-brand">D</span></span
+				>
+				<select class="select" bind:value={grid.D}>
+					{#each Object.entries(distanceFormulas) as [k] (k)}
+						<option value={k}>{k}</option>
+					{/each}
+				</select>
 			</label>
 			<label class="label">
-				<span class="label-text">Cell Maximum</span>
-				<input class="input" type="number" placeholder="Input" bind:value={max} />
+				<span class="label-text">Blast Radius <span class="badge preset-filled-brand">N</span></span
+				>
+				{#if grid}
+					<input class="input" type="number" placeholder="Input" bind:value={grid.N} min="0" />
+				{/if}
 			</label>
 			<label class="label">
-				<span class="label-text">Cell Current</span>
-				<input class="input" type="number" placeholder="Input" bind:value={current} />
+				<span class="label-text"
+					>Target Predicate <span class="badge preset-filled-brand">T</span></span
+				>
+				<select class="select" bind:value={grid.T}>
+					{#each Object.entries(targetPredicates) as [k] (k)}
+						<option value={k}>{k}</option>
+					{/each}
+				</select>
+			</label>
+			<label class="label">
+				<span class="label-text">Accumulator <span class="badge preset-filled-brand">A</span></span>
+				<select class="select" bind:value={grid.A}>
+					{#each Object.entries(accumulators) as [k] (k)}
+						<option value={k}>{k}</option>
+					{/each}
+				</select>
 			</label>
 		</div>
+		<Switch checked={dimEffected} onCheckedChange={(details) => (dimEffected = details.checked)}>
+			<Switch.Control>
+				<Switch.Thumb />
+			</Switch.Control>
+			<Switch.Label>Dim Effected</Switch.Label>
+			<Switch.HiddenInput />
+		</Switch>
+		<div class="space-y-2">
+			<h3 class="h5">Grid</h3>
+			<div class="flex flex-row gap-4">
+				<label class="label">
+					<span class="label-text">Cell Minimum</span>
+					<input class="input" type="number" placeholder="Input" bind:value={min} />
+				</label>
+				<label class="label">
+					<span class="label-text">Cell Maximum</span>
+					<input class="input" type="number" placeholder="Input" bind:value={max} />
+				</label>
+				<label class="label">
+					<span class="label-text">Cell Current</span>
+					<input class="input" type="number" placeholder="Input" bind:value={current} />
+				</label>
+			</div>
 
-		{@render slider()}
-	</div>
-	<div
-		class="badge-base LI-profile-badge"
-		data-locale="en_US"
-		data-size="medium"
-		data-theme="dark"
-		data-type="VERTICAL"
-		data-vanity="martinnester"
-		data-version="v1"
-	>
-		<a
-			class="badge-base__link LI-simple-link"
-			style="display: none;"
-			href="https://www.linkedin.com/in/martinnester?trk=profile-badge">Martin Nester</a
+			{@render slider()}
+		</div>
+		<div
+			class="badge-base LI-profile-badge"
+			data-locale="en_US"
+			data-size="medium"
+			data-theme="dark"
+			data-type="VERTICAL"
+			data-vanity="martinnester"
+			data-version="v1"
 		>
-	</div>
+			<a
+				class="badge-base__link LI-simple-link"
+				style="display: none;"
+				href="https://www.linkedin.com/in/martinnester?trk=profile-badge">Martin Nester</a
+			>
+		</div>
+	{/if}
 {/snippet}
 
 {#snippet unpinAction()}
