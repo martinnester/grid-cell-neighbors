@@ -28,6 +28,15 @@
 	let gridPresets: Record<string, NumberGrid> | undefined = $state({});
 	let grid = $derived(gridPresets[P]);
 
+	$effect(() => {
+		if (grid) {
+			grid.initialized = true;
+			return () => {
+				grid.initialized = false;
+			};
+		}
+	});
+
 	let canvas: HTMLCanvasElement | null = $state(null);
 	let canvasParent: HTMLDivElement | null = $state(null);
 
@@ -228,7 +237,8 @@
 				'Manhattan',
 				2
 			),
-			'400x400': new NumberGrid(genRandomGrid(400), getColor, 'Add Value', '> 0', 'Euclidean', 5)
+			'400x400': new NumberGrid(genRandomGrid(400), getColor, 'Add Value', '> 0', 'Euclidean', 5),
+			'1000x1000': new NumberGrid(genRandomGrid(1000), getColor, 'Add Value', '> 0', 'Euclidean', 5)
 		};
 		new Worker(new URL('./worker.ts', import.meta.url));
 		requestAnimationFrame(draw);

@@ -7,6 +7,7 @@ export class NumberGrid extends Grid<NumberGridCell> {
 	T: keyof typeof targetPredicates;
 	D: keyof typeof distanceFormulas;
 	N: number;
+	initialized: boolean = $state(false);
 	protected distanceFormula: (from: Vec2d, to: Vec2d) => number;
 	protected targetPredicate: (entry: GridEntry<NumberGridCell>) => boolean;
 	private accumulator: {
@@ -43,32 +44,45 @@ export class NumberGrid extends Grid<NumberGridCell> {
 		this.size = new Vec2d(this.data[0].length, this.data.length);
 		this.canvas = new OffscreenCanvas(this.size.x, this.size.y);
 		this.effectsCanvas = new OffscreenCanvas(this.size.x, this.size.y);
-		watch([() => this.A, () => this.T, () => this.D, () => this.N, () => getColor(0)], () => {
-			this._score = 0;
-			(() => {
-				const ctx = this.canvas.getContext('2d');
-				if (ctx) {
-					ctx.clearRect(...this.rectangle.tuple);
-					this.flatten().forEach(({ pos, value: { value } }) => {
-						ctx.fillStyle = this.getColor(value);
-						ctx.fillRect(pos.x, pos.y, 1, 1);
-					});
+		watch(
+			[
+				() => this.initialized,
+				() => this.A,
+				() => this.T,
+				() => this.D,
+				() => this.N,
+				() => getColor(0)
+			],
+			() => {
+				if (!this.initialized) {
+					return;
 				}
-			})();
+				this._score = 0;
+				(() => {
+					const ctx = this.canvas.getContext('2d');
+					if (ctx) {
+						ctx.clearRect(...this.rectangle.tuple);
+						this.flatten().forEach(({ pos, value: { value } }) => {
+							ctx.fillStyle = this.getColor(value);
+							ctx.fillRect(pos.x, pos.y, 1, 1);
+						});
+					}
+				})();
 
-			(() => {
-				const ctx = this.effectsCanvas.getContext('2d');
-				if (ctx) {
-					ctx.fillStyle = '#ffffff4f';
-					ctx.clearRect(...this.rectangle.tuple);
-					this.update(this.rectangle).forEach(({ pos, value }) => {
-						ctx.fillRect(pos.x, pos.y, 1, 1);
-						this.data[pos.x][pos.y].effected = true;
-						this._score = this.accumulator.add(this._score, value);
-					});
-				}
-			})();
-		});
+				(() => {
+					const ctx = this.effectsCanvas.getContext('2d');
+					if (ctx) {
+						ctx.fillStyle = '#ffffff4f';
+						ctx.clearRect(...this.rectangle.tuple);
+						this.update(this.rectangle).forEach(({ pos, value }) => {
+							ctx.fillRect(pos.x, pos.y, 1, 1);
+							this.data[pos.x][pos.y].effected = true;
+							this._score = this.accumulator.add(this._score, value);
+						});
+					}
+				})();
+			}
+		);
 	}
 	get(pos: Vec2d) {
 		return this.data[pos.x]?.[pos.y];
