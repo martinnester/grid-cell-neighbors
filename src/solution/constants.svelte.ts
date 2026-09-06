@@ -74,7 +74,6 @@ export class NumberGrid extends Grid<NumberGridCell> {
 		return this.data[pos.x]?.[pos.y];
 	}
 	set(pos: Vec2d, value: number) {
-		this.data[pos.x][pos.y].value = value;
 		(() => {
 			const ctx = this.canvas.getContext('2d');
 			if (ctx) {
@@ -101,6 +100,7 @@ export class NumberGrid extends Grid<NumberGridCell> {
 					}
 				);
 				console.log('after revert, before add', this._score);
+				this.data[pos.x][pos.y].value = value;
 				ctx.clearRect(...rectangle.tuple);
 				this.update(rectangle).forEach(({ pos, value }) => {
 					console.log(JSON.stringify({ pos, value }));
