@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Example 1</title>
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script lang="text/javascript" type="module" defer>
+      //@ts-check
+      import { View } from "../../src/view.js";
+      import { AffinityGrid } from "../../src/main.js";
+      const view = new View(
+        /** @type {HTMLDivElement} */ (document.getElementById("root")),
+      );
+      view.appendChild(
+        new AffinityGrid(
+          document.title,
+          [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          ],
+          3,
+        ),
+      );
+    </script>
+  </body>
+</html>
