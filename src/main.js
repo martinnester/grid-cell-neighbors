@@ -155,10 +155,9 @@ export class AffinityGrid {
     if (!ctx) {
       throw new Error("No rendering context available.");
     }
-    ctx.clearRect(...rectangle.tuple);
     flatten(this, rectangle).forEach(({ pos, value: cell }) => {
       ctx.fillStyle = getAffinityCellColor(cell);
-      ctx.fillRect(pos.x, pos.y, 1, 1);
+      ctx.fillRect(...pos.mod(this.rectangle.size).tuple, 1, 1);
     });
   }
 
@@ -189,17 +188,14 @@ export class AffinityGrid {
    * @returns {AffinityCell}
    */
   get(pos) {
-    return this.#data[pos.y][pos.x];
+    const boundedPos = pos.mod(this.rectangle.size);
+    return this.#data[boundedPos.y][boundedPos.x];
   }
   /**
    * @param {Vec2d} pos
    * @param {Partial<AffinityCell>} newCell
    */
   #set(pos, newCell) {
-    if (!(pos.y in this.#data && pos.x in this.#data[pos.y])) {
-      return;
-    }
-
     const newAffinity = newCell.affinity !== this.get(pos).affinity;
     const rectangle = new Rectangle(
       pos.sub(new Vec2d(1, 1).scale(this.#N.value)),
@@ -208,7 +204,8 @@ export class AffinityGrid {
     if (newAffinity) {
       this.#clear(rectangle);
     }
-    Object.assign(this.#data[pos.y][pos.x], newCell);
+    const boundedPos = pos.mod(this.rectangle.size);
+    Object.assign(this.#data[boundedPos.y][boundedPos.x], newCell);
     if (newAffinity) {
       this.#renderOffscreen(rectangle);
     }

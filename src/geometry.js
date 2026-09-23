@@ -1,3 +1,12 @@
+/**
+ * @param {number} n
+ * @param {number} d
+ * @returns {number}
+ */
+function mod(n, d) {
+  return ((n % d) + d) % d;
+}
+
 export class Vec2d {
   /** @type {number} */ x;
   /** @type {number} */ y;
@@ -61,6 +70,13 @@ export class Vec2d {
   }
   key() {
     return `${this.x},${this.y}`;
+  }
+  /**
+   * @param {Vec2d} that
+   * @returns {Vec2d}
+   */
+  mod(that) {
+    return new Vec2d(mod(this.x, that.x), mod(this.y, that.y));
   }
   /**
    * @returns {[number, number]}
